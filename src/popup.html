@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>F1TV Token Helper</title>
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <div class="mark" aria-hidden="true">F1</div>
+        <div>
+          <h1>F1TV Token Helper</h1>
+          <p>Manual live timing auth</p>
+        </div>
+      </header>
+
+      <section class="status-panel" aria-live="polite">
+        <div>
+          <span class="eyebrow">Status</span>
+          <strong id="status">Idle</strong>
+        </div>
+        <p id="status-detail">No token loaded.</p>
+      </section>
+
+      <section class="meta-grid" aria-label="Token details">
+        <div>
+          <span>Expires</span>
+          <strong id="expiry">-</strong>
+        </div>
+        <div>
+          <span>Product</span>
+          <strong id="product">-</strong>
+        </div>
+        <div class="wide">
+          <span>Source</span>
+          <strong id="source">-</strong>
+        </div>
+      </section>
+
+      <section class="toolbar" aria-label="Token actions">
+        <button id="open-signin" type="button" class="secondary">
+          Sign in
+        </button>
+        <button id="fetch-token" type="button" class="primary">Fetch</button>
+      </section>
+
+      <section class="header-panel" aria-label="Authorization header">
+        <div class="panel-heading">
+          <span>Authorization header</span>
+          <button id="reveal-header" type="button" class="ghost" disabled>
+            Show
+          </button>
+        </div>
+        <textarea
+          id="header-output"
+          readonly
+          spellcheck="false"
+          aria-label="Authorization header output"
+        ></textarea>
+      </section>
+
+      <section class="export-grid" aria-label="Export actions">
+        <button id="copy-header" type="button" disabled>Copy HA value</button>
+        <button id="download-header" type="button" disabled>
+          Download TXT
+        </button>
+        <button id="clear-token" type="button" class="danger" disabled>
+          Clear
+        </button>
+      </section>
+    </main>
+    <script type="module" src="./popup.js"></script>
+  </body>
+</html>

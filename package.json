@@ -1,0 +1,39 @@
+{
+  "name": "f1tv-token-helper",
+  "version": "0.0.0-development",
+  "description": "Chrome extension for manually exporting an F1TV live timing Authorization header",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "clean": "node scripts/clean.mjs",
+    "build": "npm run clean && tsc -p tsconfig.json && node scripts/copy-assets.mjs && node scripts/zip-dist.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint . && prettier --check ."
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@nicxe/semantic-release-config": "^1.2.2",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/github": "^12.0.6",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "@types/chrome": "^0.1.33",
+    "conventional-changelog-conventionalcommits": "^9.3.0",
+    "eslint": "^9.39.1",
+    "prettier": "^3.6.2",
+    "semantic-release": "^25.0.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vitest": "^4.0.8"
+  },
+  "overrides": {
+    "tar": "^7.5.10",
+    "cross-spawn": "^7.0.6",
+    "brace-expansion": "^2.0.2"
+  }
+}

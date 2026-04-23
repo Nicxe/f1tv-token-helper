@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "F1TV Token Helper",
+  "version": "0.1.0",
+  "description": "Manually export your local F1TV live timing Authorization header.",
+  "action": {
+    "default_title": "F1TV Token Helper",
+    "default_popup": "popup.html"
+  },
+  "permissions": ["cookies", "activeTab", "scripting", "clipboardWrite"],
+  "host_permissions": ["https://formula1.com/*", "https://*.formula1.com/*"]
+}
