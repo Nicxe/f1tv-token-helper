@@ -37,8 +37,8 @@ npm run build
 ```
 
 5. Open Chrome and go to `chrome://extensions`.
-6. Enable Developer mode.
-7. Click Load unpacked and select the `dist/` folder in this repository.
+6. Click Load unpacked.
+7. Select the local `dist/` folder in this repository.
 
 After that, the helper is installed in the browser and ready to use.
 
