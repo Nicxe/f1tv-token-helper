@@ -17,6 +17,7 @@ const result = spawnSync(
     "popup.js",
     "pairing.js",
     "token.js",
+    "icons",
   ],
   {
     cwd: distUrl,
