@@ -46,9 +46,8 @@ npm run build
 ```
 
 5. Open Chrome and go to `chrome://extensions`.
-6. Enable `Developer mode`.
-7. Click `Load unpacked`.
-8. Select the local `dist/` folder in this repository.
+6. Click `Load unpacked`.
+7. Select the local `dist/` folder in this repository.
 
 After loading or reloading the unpacked extension, use the same Home Assistant pairing flow described above.
 
