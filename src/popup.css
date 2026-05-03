@@ -22,7 +22,7 @@ html,
 body {
   margin: 0;
   min-width: 376px;
-  min-height: 548px;
+  min-height: 680px;
   background: var(--track);
   color: var(--ink);
   font-family:
@@ -43,7 +43,8 @@ body {
 }
 
 button,
-textarea {
+textarea,
+summary {
   font: inherit;
 }
 
@@ -127,6 +128,7 @@ h1 {
 }
 
 .status-panel,
+.action-panel,
 .header-panel {
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -159,6 +161,16 @@ h1 {
   color: var(--ink);
   font-size: 13px;
   line-height: 1.3;
+}
+
+.action-panel {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.action-panel > .primary {
+  width: 100%;
 }
 
 .meta-grid {
@@ -226,6 +238,46 @@ h1 {
   display: grid;
   gap: 10px;
   padding: 12px;
+}
+
+.advanced {
+  display: grid;
+  gap: 10px;
+}
+
+.advanced[open] {
+  display: grid;
+}
+
+.advanced summary,
+.pairing-link summary {
+  cursor: pointer;
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.advanced .header-panel {
+  margin-top: 10px;
+}
+
+.advanced .export-grid {
+  margin-top: 8px;
+}
+
+.pairing-link textarea {
+  margin-top: 8px;
+}
+
+.pairing-link button {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.hidden {
+  display: none;
 }
 
 .panel-heading {

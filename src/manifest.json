@@ -1,12 +1,31 @@
 {
   "manifest_version": 3,
-  "name": "F1TV Token Helper",
+  "name": "F1TV Token Helper BETA",
   "version": "0.1.0",
-  "description": "Manually export your local F1TV live timing Authorization header.",
-  "action": {
-    "default_title": "F1TV Token Helper",
-    "default_popup": "popup.html"
+  "description": "THIS EXTENSION IS FOR BETA TESTING. Send your local F1TV live timing token to Home Assistant.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
   },
-  "permissions": ["cookies", "activeTab", "scripting", "clipboardWrite"],
-  "host_permissions": ["https://formula1.com/*", "https://*.formula1.com/*"]
+  "action": {
+    "default_title": "F1TV Token Helper BETA",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "permissions": [
+    "cookies",
+    "activeTab",
+    "scripting",
+    "clipboardWrite",
+    "storage"
+  ],
+  "host_permissions": ["https://formula1.com/*", "https://*.formula1.com/*"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"]
 }

@@ -1,13 +1,14 @@
 {
   "name": "f1tv-token-helper",
   "version": "0.0.0-development",
-  "description": "Chrome extension for manually exporting an F1TV live timing Authorization header",
+  "description": "Chrome extension for sending a local F1TV live timing token to Home Assistant",
   "private": true,
   "license": "MIT",
   "type": "module",
   "scripts": {
     "clean": "node scripts/clean.mjs",
-    "build": "npm run clean && tsc -p tsconfig.json && node scripts/copy-assets.mjs && node scripts/zip-dist.mjs",
+    "build": "npm run clean && npm run icons && tsc -p tsconfig.json && node scripts/copy-assets.mjs && node scripts/zip-dist.mjs",
+    "icons": "node scripts/generate-icons.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "lint": "eslint . && prettier --check ."
