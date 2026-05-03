@@ -7,6 +7,11 @@ import {
   resolveSubscriptionToken,
   validateSubscriptionToken,
 } from "../src/token";
+import {
+  callbackOriginPattern,
+  isPairingExpired,
+  parsePairingUrl,
+} from "../src/pairing";
 
 const NOW = 1_800_000_000;
 
@@ -96,6 +101,54 @@ describe("token validation", () => {
       bearerValue: `Bearer ${token}`,
       authorizationHeader: `Authorization: Bearer ${token}`,
     });
+  });
+});
+
+describe("Home Assistant pairing", () => {
+  it("parses a Home Assistant pairing link", () => {
+    const result = parsePairingUrl(
+      "https://example.com/helper?callback_url=http%3A%2F%2Fha.local%3A8123%2Fapi%2Ff1_sensor%2Fauth%2Ff1tv%2Fcallback&session_id=session&nonce=nonce&expires_at=2026-05-03T12%3A00%3A00Z",
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      config: {
+        callbackUrl: "http://ha.local:8123/api/f1_sensor/auth/f1tv/callback",
+        sessionId: "session",
+        nonce: "nonce",
+        expiresAtIso: "2026-05-03T12:00:00Z",
+      },
+    });
+  });
+
+  it("rejects pairing links without required details", () => {
+    expect(parsePairingUrl("https://example.com/helper")).toMatchObject({
+      ok: false,
+    });
+  });
+
+  it("detects expired pairing sessions", () => {
+    const config = {
+      callbackUrl: "http://ha.local:8123/api/f1_sensor/auth/f1tv/callback",
+      sessionId: "session",
+      nonce: "nonce",
+      expiresAtIso: "2026-05-03T12:00:00Z",
+    };
+
+    expect(isPairingExpired(config, Date.parse("2026-05-03T12:00:01Z"))).toBe(
+      true,
+    );
+    expect(isPairingExpired(config, Date.parse("2026-05-03T11:59:59Z"))).toBe(
+      false,
+    );
+  });
+
+  it("builds an optional host permission origin for Home Assistant", () => {
+    expect(
+      callbackOriginPattern(
+        "https://ha.example.com/api/f1_sensor/auth/f1tv/callback",
+      ),
+    ).toBe("https://ha.example.com/*");
   });
 });
 

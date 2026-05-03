@@ -2,6 +2,12 @@ import {
   type TokenValidationResult,
   resolveSubscriptionToken,
 } from "./token.js";
+import {
+  type PairingConfig,
+  callbackOriginPattern,
+  isPairingExpired,
+  parsePairingUrl,
+} from "./pairing.js";
 
 type TokenCandidate = {
   label: string;
@@ -18,12 +24,18 @@ const COOKIE_URLS = [
 
 const fetchButton = getElement<HTMLButtonElement>("fetch-token");
 const signInButton = getElement<HTMLButtonElement>("open-signin");
+const connectButton = getElement<HTMLButtonElement>("connect-ha");
+const sendButton = getElement<HTMLButtonElement>("send-token");
 const copyButton = getElement<HTMLButtonElement>("copy-header");
 const downloadButton = getElement<HTMLButtonElement>("download-header");
 const revealButton = getElement<HTMLButtonElement>("reveal-header");
 const clearButton = getElement<HTMLButtonElement>("clear-token");
+const clearPairingButton = getElement<HTMLButtonElement>("clear-pairing");
 const statusElement = getElement<HTMLElement>("status");
 const detailElement = getElement<HTMLElement>("status-detail");
+const pairingInput = getElement<HTMLTextAreaElement>("pairing-input");
+const haTargetElement = getElement<HTMLElement>("ha-target");
+const pairingExpiryElement = getElement<HTMLElement>("pairing-expiry");
 const expiryElement = getElement<HTMLElement>("expiry");
 const productElement = getElement<HTMLElement>("product");
 const sourceElement = getElement<HTMLElement>("source");
@@ -32,8 +44,10 @@ const headerOutput = getElement<HTMLTextAreaElement>("header-output");
 let currentToken: Extract<TokenValidationResult, { ok: true }> | null = null;
 let currentSource = "";
 let headerVisible = false;
+let pairingConfig: PairingConfig | null = loadPairingFromLocation();
 
 render();
+void loadPairingFromActiveTab();
 
 signInButton.addEventListener("click", () => {
   chrome.tabs.create({ url: SIGN_IN_URL });
@@ -41,6 +55,18 @@ signInButton.addEventListener("click", () => {
 
 fetchButton.addEventListener("click", () => {
   void fetchToken();
+});
+
+connectButton.addEventListener("click", () => {
+  connectPairing();
+});
+
+sendButton.addEventListener("click", () => {
+  void sendTokenToHomeAssistant();
+});
+
+pairingInput.addEventListener("input", () => {
+  render();
 });
 
 copyButton.addEventListener("click", () => {
@@ -63,7 +89,39 @@ clearButton.addEventListener("click", () => {
   render();
 });
 
-async function fetchToken(): Promise<void> {
+clearPairingButton.addEventListener("click", () => {
+  pairingConfig = null;
+  pairingInput.value = "";
+  render();
+});
+
+function loadPairingFromLocation(): PairingConfig | null {
+  const result = parsePairingUrl(globalThis.location.href);
+  return result.ok ? result.config : null;
+}
+
+async function loadPairingFromActiveTab(): Promise<void> {
+  if (pairingConfig) {
+    return;
+  }
+
+  const tab = await getActiveTab();
+  if (!tab?.url) {
+    return;
+  }
+
+  const result = parsePairingUrl(tab.url);
+  if (!result.ok) {
+    return;
+  }
+
+  pairingConfig = result.config;
+  pairingInput.value = tab.url;
+  setStatus("Connected", "Home Assistant pairing is ready.");
+  render();
+}
+
+async function fetchToken(): Promise<boolean> {
   setBusy(true);
   setStatus("Scanning", "Checking the local Formula 1 browser session.");
 
@@ -85,6 +143,7 @@ async function fetchToken(): Promise<void> {
 
   setBusy(false);
   render(result.validation.ok ? undefined : result.validation);
+  return result.validation.ok;
 }
 
 function chooseToken(candidates: TokenCandidate[]): {
@@ -249,6 +308,115 @@ async function copyHeaderValue(): Promise<void> {
   }
 }
 
+function connectPairing(): void {
+  const result = parsePairingUrl(pairingInput.value);
+  if (!result.ok) {
+    setStatus("Pairing needed", result.message);
+    render();
+    return;
+  }
+  pairingConfig = result.config;
+  setStatus("Connected", "Home Assistant pairing is ready.");
+  render();
+}
+
+async function sendTokenToHomeAssistant(): Promise<void> {
+  const pairing = pairingConfig;
+  if (!pairing) {
+    setStatus("Pairing needed", "Paste the pairing link from Home Assistant.");
+    render();
+    return;
+  }
+  if (isPairingExpired(pairing)) {
+    setStatus("Expired", "Start a new pairing session in Home Assistant.");
+    render();
+    return;
+  }
+
+  if (!currentToken && !(await fetchToken())) {
+    return;
+  }
+  if (!currentToken) {
+    return;
+  }
+
+  const permissionGranted = await requestHomeAssistantPermission(
+    pairing.callbackUrl,
+  );
+  if (!permissionGranted) {
+    setStatus("Permission needed", "Allow access to this Home Assistant URL.");
+    render();
+    return;
+  }
+
+  setBusy(true);
+  sendButton.disabled = true;
+  setStatus("Sending", "Sending the token to Home Assistant.");
+
+  try {
+    const response = await fetch(pairing.callbackUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session_id: pairing.sessionId,
+        nonce: pairing.nonce,
+        subscription_token: currentToken.token,
+        source: "browser_extension",
+      }),
+    });
+    const body = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      code?: string;
+    } | null;
+    if (response.ok && body?.ok) {
+      currentToken = null;
+      currentSource = "";
+      headerVisible = false;
+      pairingConfig = null;
+      pairingInput.value = "";
+      setStatus("Done", "F1TV access was sent to Home Assistant.");
+    } else {
+      setStatus("Not sent", formatCallbackError(body?.code, response.status));
+    }
+  } catch {
+    setStatus("Unreachable", "Home Assistant could not be reached.");
+  } finally {
+    setBusy(false);
+    render();
+  }
+}
+
+function requestHomeAssistantPermission(callbackUrl: string): Promise<boolean> {
+  const origins = [callbackOriginPattern(callbackUrl)];
+  return new Promise((resolve) => {
+    chrome.permissions.request({ origins }, (granted) => {
+      if (chrome.runtime.lastError) {
+        resolve(false);
+        return;
+      }
+      resolve(Boolean(granted));
+    });
+  });
+}
+
+function formatCallbackError(code: string | undefined, status: number): string {
+  switch (code) {
+    case "gate_closed":
+      return "F1TV pairing is disabled in this Home Assistant build.";
+    case "expired_pairing":
+      return "The pairing expired. Start again in Home Assistant.";
+    case "invalid_nonce":
+      return "Home Assistant rejected this pairing session.";
+    case "auth_token_expired":
+      return "The F1TV token has expired. Sign in again and retry.";
+    case "invalid_auth_header":
+    case "malformed_jwt":
+      return "The F1TV token could not be validated.";
+    default:
+      return `Home Assistant rejected the token (${status}).`;
+  }
+}
+
 function copyWithFallback(value: string): void {
   const element = document.createElement("textarea");
   element.value = value;
@@ -281,11 +449,16 @@ function downloadHeader(): void {
 function render(error?: Extract<TokenValidationResult, { ok: false }>): void {
   const token = currentToken;
   const hasToken = token !== null;
+  const hasPairing = pairingConfig !== null;
 
+  connectButton.disabled = !pairingInput.value.trim();
+  sendButton.disabled = !hasPairing;
+  clearPairingButton.disabled = !hasPairing;
   copyButton.disabled = !hasToken;
   downloadButton.disabled = !hasToken;
   revealButton.disabled = !hasToken;
   clearButton.disabled = !hasToken && !error;
+  renderPairing();
 
   if (hasToken) {
     const expiry = new Date(token.expiresAtIso);
@@ -324,6 +497,8 @@ function setStatus(status: string, detail: string): void {
 function setBusy(isBusy: boolean): void {
   fetchButton.disabled = isBusy;
   fetchButton.textContent = isBusy ? "Scanning" : "Fetch";
+  sendButton.disabled = isBusy || pairingConfig === null;
+  sendButton.textContent = isBusy ? "Sending" : "Send to Home Assistant";
 }
 
 function maskHeader(header: string): string {
@@ -342,4 +517,21 @@ function getElement<T extends HTMLElement>(id: string): T {
     throw new Error(`Missing element #${id}`);
   }
   return element as T;
+}
+
+function renderPairing(): void {
+  const pairing = pairingConfig;
+  if (!pairing) {
+    haTargetElement.textContent = "-";
+    pairingExpiryElement.textContent = "-";
+    return;
+  }
+  try {
+    haTargetElement.textContent = new URL(pairing.callbackUrl).origin;
+  } catch {
+    haTargetElement.textContent = "Home Assistant";
+  }
+  pairingExpiryElement.textContent = new Date(
+    pairing.expiresAtIso,
+  ).toLocaleString();
 }

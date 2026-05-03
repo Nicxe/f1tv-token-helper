@@ -25,6 +25,14 @@
       </section>
 
       <section class="meta-grid" aria-label="Token details">
+        <div class="wide">
+          <span>Home Assistant</span>
+          <strong id="ha-target">-</strong>
+        </div>
+        <div class="wide">
+          <span>Pairing expires</span>
+          <strong id="pairing-expiry">-</strong>
+        </div>
         <div>
           <span>Expires</span>
           <strong id="expiry">-</strong>
@@ -43,33 +51,59 @@
         <button id="open-signin" type="button" class="secondary">
           Sign in
         </button>
-        <button id="fetch-token" type="button" class="primary">Fetch</button>
+        <button id="fetch-token" type="button" class="secondary">Fetch</button>
       </section>
 
-      <section class="header-panel" aria-label="Authorization header">
+      <section class="header-panel" aria-label="Home Assistant pairing">
         <div class="panel-heading">
-          <span>Authorization header</span>
-          <button id="reveal-header" type="button" class="ghost" disabled>
-            Show
+          <span>Home Assistant pairing</span>
+          <button id="clear-pairing" type="button" class="ghost" disabled>
+            Clear
           </button>
         </div>
         <textarea
-          id="header-output"
-          readonly
+          id="pairing-input"
           spellcheck="false"
-          aria-label="Authorization header output"
+          aria-label="Home Assistant pairing link"
+          placeholder="Paste the pairing link from Home Assistant"
         ></textarea>
+        <div class="toolbar">
+          <button id="connect-ha" type="button" class="secondary" disabled>
+            Connect
+          </button>
+          <button id="send-token" type="button" class="primary" disabled>
+            Send to Home Assistant
+          </button>
+        </div>
       </section>
 
-      <section class="export-grid" aria-label="Export actions">
-        <button id="copy-header" type="button" disabled>Copy HA value</button>
-        <button id="download-header" type="button" disabled>
-          Download TXT
-        </button>
-        <button id="clear-token" type="button" class="danger" disabled>
-          Clear
-        </button>
-      </section>
+      <details class="advanced">
+        <summary>Advanced manual export</summary>
+        <section class="header-panel" aria-label="Authorization header">
+          <div class="panel-heading">
+            <span>Authorization header</span>
+            <button id="reveal-header" type="button" class="ghost" disabled>
+              Show
+            </button>
+          </div>
+          <textarea
+            id="header-output"
+            readonly
+            spellcheck="false"
+            aria-label="Authorization header output"
+          ></textarea>
+        </section>
+
+        <section class="export-grid" aria-label="Export actions">
+          <button id="copy-header" type="button" disabled>Copy HA value</button>
+          <button id="download-header" type="button" disabled>
+            Download TXT
+          </button>
+          <button id="clear-token" type="button" class="danger" disabled>
+            Clear
+          </button>
+        </section>
+      </details>
     </main>
     <script type="module" src="./popup.js"></script>
   </body>
