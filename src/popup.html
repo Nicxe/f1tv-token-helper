@@ -24,6 +24,20 @@
         <p id="status-detail">No token loaded.</p>
       </section>
 
+      <section class="action-panel" aria-label="Next action">
+        <div id="auth-actions" class="toolbar">
+          <button id="open-signin" type="button" class="secondary">
+            Sign in
+          </button>
+          <button id="fetch-token" type="button" class="secondary">
+            Fetch
+          </button>
+        </div>
+        <button id="send-token" type="button" class="primary hidden" disabled>
+          Send to Home Assistant
+        </button>
+      </section>
+
       <section class="meta-grid" aria-label="Token details">
         <div class="wide">
           <span>Home Assistant</span>
@@ -47,13 +61,6 @@
         </div>
       </section>
 
-      <section class="toolbar" aria-label="Token actions">
-        <button id="open-signin" type="button" class="secondary">
-          Sign in
-        </button>
-        <button id="fetch-token" type="button" class="secondary">Fetch</button>
-      </section>
-
       <section class="header-panel" aria-label="Home Assistant pairing">
         <div class="panel-heading">
           <span>Home Assistant pairing</span>
@@ -61,20 +68,19 @@
             Clear
           </button>
         </div>
-        <textarea
-          id="pairing-input"
-          spellcheck="false"
-          aria-label="Home Assistant pairing link"
-          placeholder="Paste the pairing link from Home Assistant"
-        ></textarea>
-        <div class="toolbar">
+
+        <details class="pairing-link">
+          <summary>Pairing link</summary>
+          <textarea
+            id="pairing-input"
+            spellcheck="false"
+            aria-label="Home Assistant pairing link"
+            placeholder="Paste the pairing link from Home Assistant"
+          ></textarea>
           <button id="connect-ha" type="button" class="secondary" disabled>
             Connect
           </button>
-          <button id="send-token" type="button" class="primary" disabled>
-            Send to Home Assistant
-          </button>
-        </div>
+        </details>
       </section>
 
       <details class="advanced">

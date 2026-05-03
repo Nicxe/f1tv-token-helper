@@ -128,6 +128,7 @@ h1 {
 }
 
 .status-panel,
+.action-panel,
 .header-panel {
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -160,6 +161,16 @@ h1 {
   color: var(--ink);
   font-size: 13px;
   line-height: 1.3;
+}
+
+.action-panel {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.action-panel > .primary {
+  width: 100%;
 }
 
 .meta-grid {
@@ -238,7 +249,8 @@ h1 {
   display: grid;
 }
 
-.advanced summary {
+.advanced summary,
+.pairing-link summary {
   cursor: pointer;
   color: var(--cyan);
   font-size: 12px;
@@ -253,6 +265,19 @@ h1 {
 
 .advanced .export-grid {
   margin-top: 8px;
+}
+
+.pairing-link textarea {
+  margin-top: 8px;
+}
+
+.pairing-link button {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.hidden {
+  display: none;
 }
 
 .panel-heading {

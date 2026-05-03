@@ -7,7 +7,13 @@
     "default_title": "F1TV Token Helper",
     "default_popup": "popup.html"
   },
-  "permissions": ["cookies", "activeTab", "scripting", "clipboardWrite"],
+  "permissions": [
+    "cookies",
+    "activeTab",
+    "scripting",
+    "clipboardWrite",
+    "storage"
+  ],
   "host_permissions": ["https://formula1.com/*", "https://*.formula1.com/*"],
   "optional_host_permissions": ["http://*/*", "https://*/*"]
 }
