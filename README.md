@@ -6,17 +6,18 @@ It does not sign in for you, does not store your token permanently, does not sen
 
 ## Current Status
 
-The extension has been submitted to the Chrome Web Store as an unlisted beta and is waiting for review.
-Until that review is approved, testers must use the developer install flow below.
+The extension is published as an unlisted beta in the Chrome Web Store:
 
-The Home Assistant pairing flow requires F1 Sensor `v4.3.0-beta.2` or later.
-Older beta builds support only the manual token fallback.
+```text
+https://chromewebstore.google.com/detail/f1tv-token-helper-beta/bbpgdcjohdjcechlffloekhpgdbjoafh
+```
+
+The Home Assistant pairing flow requires F1 Sensor `v4.3.0-beta.3` or later.
+Older beta builds may support only the manual token fallback.
 
 ## Normal Beta Flow
 
-Use this flow after the Chrome Web Store unlisted beta is approved.
-
-1. Install **F1TV Token Helper BETA** from the Chrome Web Store link.
+1. Install **F1TV Token Helper BETA** from the [Chrome Web Store](https://chromewebstore.google.com/detail/f1tv-token-helper-beta/bbpgdcjohdjcechlffloekhpgdbjoafh).
 2. In Home Assistant, open F1 Sensor and select `Configure`.
 3. Select `Connect F1TV access with Token Helper`.
 4. When Home Assistant opens the pairing page, keep that tab active and open the extension popup.
@@ -29,7 +30,7 @@ Public live timing continues to work without F1TV access and if the token later 
 
 ## Developer Install
 
-Use this while the Chrome Web Store unlisted beta is under review, or when working on the extension locally.
+Use this only when working on the extension locally or when you need to test a build that is not published in the Chrome Web Store.
 
 1. Install Node.js 22 or newer.
 2. Clone or unpack this repository locally.
@@ -70,7 +71,7 @@ The F1TV token itself is kept only in popup memory and is cleared after success,
 ## Advanced Manual Export
 
 Manual export is a fallback for development and troubleshooting.
-Use pairing whenever F1 Sensor `v4.3.0-beta.2` or later is available.
+Use pairing whenever F1 Sensor `v4.3.0-beta.3` or later is available.
 
 The Home Assistant paste value is:
 
