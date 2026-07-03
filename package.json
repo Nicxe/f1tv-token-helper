@@ -23,13 +23,13 @@
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/github": "^12.0.6",
     "@semantic-release/release-notes-generator": "^14.1.1",
-    "@types/chrome": "^0.1.33",
+    "@types/chrome": "^0.2.2",
     "conventional-changelog-conventionalcommits": "^9.3.0",
-    "eslint": "^10.3.0",
-    "prettier": "^3.6.2",
+    "eslint": "^10.6.0",
+    "prettier": "^3.9.4",
     "semantic-release": "^25.0.3",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.3",
+    "typescript-eslint": "^8.62.1",
     "vitest": "^4.0.8"
   },
   "overrides": {
