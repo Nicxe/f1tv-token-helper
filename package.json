@@ -27,7 +27,7 @@
     "conventional-changelog-conventionalcommits": "^9.3.0",
     "eslint": "^10.8.0",
     "prettier": "^3.9.6",
-    "semantic-release": "^25.0.8",
+    "semantic-release": "^25.0.9",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10"
