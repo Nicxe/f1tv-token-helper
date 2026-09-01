@@ -127,6 +127,50 @@ describe("Home Assistant pairing", () => {
     });
   });
 
+  it("rejects public HTTP and malformed Home Assistant callback URLs", () => {
+    const pairingLink = (callbackUrl: string) =>
+      `https://example.com/helper?callback_url=${encodeURIComponent(callbackUrl)}&session_id=session&nonce=nonce&expires_at=2026-05-03T12%3A00%3A00Z`;
+
+    expect(
+      parsePairingUrl(
+        pairingLink("http://ha.example.com/api/f1_sensor/auth/f1tv/callback"),
+      ),
+    ).toMatchObject({ ok: false });
+    expect(
+      parsePairingUrl(pairingLink("https://ha.example.com/api/other")),
+    ).toMatchObject({ ok: false });
+    expect(
+      parsePairingUrl(
+        pairingLink(
+          "https://user:password@ha.example.com/api/f1_sensor/auth/f1tv/callback",
+        ),
+      ),
+    ).toMatchObject({ ok: false });
+    expect(
+      parsePairingUrl(
+        pairingLink(
+          "https://ha.example.com/api/f1_sensor/auth/f1tv/callback?token=secret",
+        ),
+      ),
+    ).toMatchObject({ ok: false });
+  });
+
+  it("allows local HTTP Home Assistant callback URLs", () => {
+    const pairingLink = (callbackUrl: string) =>
+      `https://example.com/helper?callback_url=${encodeURIComponent(callbackUrl)}&session_id=session&nonce=nonce&expires_at=2026-05-03T12%3A00%3A00Z`;
+
+    for (const callbackUrl of [
+      "http://localhost:8123/api/f1_sensor/auth/f1tv/callback",
+      "http://ha.local:8123/api/f1_sensor/auth/f1tv/callback",
+      "http://192.168.1.10:8123/api/f1_sensor/auth/f1tv/callback",
+      "http://[fd12::1]:8123/api/f1_sensor/auth/f1tv/callback",
+    ]) {
+      expect(parsePairingUrl(pairingLink(callbackUrl))).toMatchObject({
+        ok: true,
+      });
+    }
+  });
+
   it("detects expired pairing sessions", () => {
     const config = {
       callbackUrl: "http://ha.local:8123/api/f1_sensor/auth/f1tv/callback",

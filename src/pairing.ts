@@ -15,6 +15,58 @@ export type PairingParseResult =
       message: string;
     };
 
+const HOME_ASSISTANT_CALLBACK_PATH = "/api/f1_sensor/auth/f1tv/callback";
+
+function isLocalCallbackHostname(hostname: string): boolean {
+  const normalized = hostname
+    .replace(/^\[|\]$/g, "")
+    .replace(/\.$/, "")
+    .toLowerCase();
+  if (normalized === "localhost" || normalized.endsWith(".local")) {
+    return true;
+  }
+
+  const octets = normalized.split(".").map(Number);
+  if (
+    octets.length === 4 &&
+    octets.every(
+      (octet) => Number.isInteger(octet) && octet >= 0 && octet <= 255,
+    )
+  ) {
+    return (
+      octets[0] === 10 ||
+      octets[0] === 127 ||
+      (octets[0] === 169 && octets[1] === 254) ||
+      (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
+      (octets[0] === 192 && octets[1] === 168)
+    );
+  }
+
+  return (
+    normalized === "::1" ||
+    /^f[cd][0-9a-f]{2}:/i.test(normalized) ||
+    /^fe[89ab][0-9a-f]:/i.test(normalized)
+  );
+}
+
+function isSafeCallbackUrl(callback: URL): boolean {
+  if (
+    callback.pathname !== HOME_ASSISTANT_CALLBACK_PATH ||
+    callback.username ||
+    callback.password ||
+    callback.search ||
+    callback.hash
+  ) {
+    return false;
+  }
+  if (callback.protocol === "https:") {
+    return true;
+  }
+  return (
+    callback.protocol === "http:" && isLocalCallbackHostname(callback.hostname)
+  );
+}
+
 export function parsePairingUrl(value: string): PairingParseResult {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -42,10 +94,11 @@ export function parsePairingUrl(value: string): PairingParseResult {
 
   try {
     const callback = new URL(callbackUrl);
-    if (callback.protocol !== "http:" && callback.protocol !== "https:") {
+    if (!isSafeCallbackUrl(callback)) {
       return {
         ok: false,
-        message: "The Home Assistant callback must use HTTP or HTTPS.",
+        message:
+          "The Home Assistant callback must use HTTPS, or HTTP on a local network, and match the F1 Sensor pairing path.",
       };
     }
   } catch {
