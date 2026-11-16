@@ -128,6 +128,7 @@ h1 {
 }
 
 .status-panel,
+.access-panel,
 .action-panel,
 .header-panel {
   border: 1px solid var(--line);
@@ -171,6 +172,30 @@ h1 {
 
 .action-panel > .primary {
   width: 100%;
+}
+
+.access-panel {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-color: var(--amber);
+}
+
+.access-panel p,
+.access-panel ul {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.access-panel ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.access-panel .access-note {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .meta-grid {
@@ -278,6 +303,14 @@ h1 {
 
 .hidden {
   display: none;
+}
+
+/* Firefox caps extension popups at 600px tall; let the content set the height. */
+@supports (-moz-appearance: none) {
+  html,
+  body {
+    min-height: 0;
+  }
 }
 
 .panel-heading {
