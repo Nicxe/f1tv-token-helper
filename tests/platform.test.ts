@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   FORMULA1_HOST_PATTERNS,
   type PermissionsLike,
+  containerStoreId,
   cookieStoreIdsForTab,
   describeSiteAccess,
+  findHomeAssistantTab,
   findMissingOrigins,
   homeAssistantPermissionPattern,
   isFirefoxExtensionUrl,
@@ -18,6 +20,7 @@ const PAIRING = {
   nonce: "nonce",
   expiresAtIso: "2026-05-03T12:00:00Z",
 };
+const BEFORE_EXPIRY = Date.parse("2026-05-03T11:50:00Z");
 
 describe("browser detection", () => {
   it("recognises Firefox extension pages", () => {
@@ -56,7 +59,7 @@ describe("Home Assistant permission pattern", () => {
 
 describe("required site access", () => {
   it("asks for nothing on Chrome", () => {
-    expect(requiredSiteAccess(PAIRING, false)).toEqual([]);
+    expect(requiredSiteAccess(PAIRING, false, BEFORE_EXPIRY)).toEqual([]);
   });
 
   it("asks for Formula 1 only without a pairing", () => {
@@ -64,10 +67,16 @@ describe("required site access", () => {
   });
 
   it("adds the Home Assistant host once paired", () => {
-    expect(requiredSiteAccess(PAIRING, true)).toEqual([
+    expect(requiredSiteAccess(PAIRING, true, BEFORE_EXPIRY)).toEqual([
       ...FORMULA1_HOST_PATTERNS,
       "http://192.168.1.10/*",
     ]);
+  });
+
+  it("stops asking for the Home Assistant host once the pairing expired", () => {
+    expect(
+      requiredSiteAccess(PAIRING, true, Date.parse("2026-05-03T12:00:01Z")),
+    ).toEqual(FORMULA1_HOST_PATTERNS);
   });
 });
 
@@ -80,7 +89,10 @@ describe("missing origins", () => {
     };
 
     await expect(
-      findMissingOrigins(permissions, requiredSiteAccess(PAIRING, true)),
+      findMissingOrigins(
+        permissions,
+        requiredSiteAccess(PAIRING, true, BEFORE_EXPIRY),
+      ),
     ).resolves.toEqual(["https://*.formula1.com/*", "http://192.168.1.10/*"]);
   });
 
@@ -127,9 +139,49 @@ describe("cookie stores", () => {
     ]);
   });
 
-  it("adds the container store of the active tab", () => {
+  it("checks the container of the active tab before the default store", () => {
     expect(
       cookieStoreIdsForTab({ cookieStoreId: "firefox-container-2" }),
-    ).toEqual([undefined, "firefox-container-2"]);
+    ).toEqual(["firefox-container-2", undefined]);
+  });
+
+  it("only reports real containers for opening the sign-in tab", () => {
+    expect(containerStoreId(null)).toBeUndefined();
+    expect(containerStoreId({ cookieStoreId: "firefox-default" })).toBe(
+      undefined,
+    );
+    expect(containerStoreId({ cookieStoreId: "firefox-container-2" })).toBe(
+      "firefox-container-2",
+    );
+  });
+});
+
+describe("Home Assistant tab after sending", () => {
+  const tabs = [
+    { id: 1, url: "http://192.168.1.10:9000/portainer" },
+    { id: 2, url: "http://192.168.1.10:8123/config/integrations" },
+  ];
+
+  it("ignores other services on the same host in Firefox", () => {
+    expect(findHomeAssistantTab(tabs, CALLBACK, true)).toEqual(tabs[1]);
+  });
+
+  it("returns nothing when only other ports are open", () => {
+    expect(findHomeAssistantTab([tabs[0]], CALLBACK, true)).toBeUndefined();
+  });
+
+  it("matches default ports and skips tabs without a URL", () => {
+    const callback = "https://ha.example.com/api/f1_sensor/auth/f1tv/callback";
+    expect(
+      findHomeAssistantTab(
+        [{ id: 3 }, { id: 4, url: "https://ha.example.com:443/lovelace" }],
+        callback,
+        true,
+      ),
+    ).toEqual({ id: 4, url: "https://ha.example.com:443/lovelace" });
+  });
+
+  it("keeps the first matching tab on Chrome", () => {
+    expect(findHomeAssistantTab(tabs, CALLBACK, false)).toEqual(tabs[0]);
   });
 });

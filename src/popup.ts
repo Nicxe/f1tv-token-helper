@@ -10,11 +10,14 @@ import {
 import {
   FORMULA1_HOST_PATTERNS,
   type TabWithCookieStore,
+  containerStoreId,
   cookieStoreIdsForTab,
   describeSiteAccess,
+  findHomeAssistantTab,
   findMissingOrigins,
   homeAssistantPermissionPattern,
   isFirefoxExtensionUrl,
+  isFormula1Pattern,
   requiredSiteAccess,
 } from "./platform.js";
 
@@ -65,6 +68,7 @@ let pairingConfig: PairingConfig | null = loadPairingFromLocation();
 let pairingTabId: number | null = null;
 let autoFetchStarted = false;
 let missingSiteAccess: string[] = [];
+let siteAccessCheck = 0;
 let currentStatus = {
   status: "Idle",
   detail: "No token loaded.",
@@ -218,10 +222,21 @@ async function refreshSiteAccess(): Promise<void> {
   if (!firefox) {
     return;
   }
-  missingSiteAccess = await findMissingOrigins(
+  const check = ++siteAccessCheck;
+  const missing = await findMissingOrigins(
     chrome.permissions,
     requiredSiteAccess(pairingConfig, true),
   );
+  if (check !== siteAccessCheck) {
+    return;
+  }
+  missingSiteAccess = missing;
+  if (
+    currentStatus.status === "Access needed" &&
+    !missing.some(isFormula1Pattern)
+  ) {
+    setStatus("Idle", "Formula 1 access is allowed. Select Fetch.");
+  }
   render();
 }
 
@@ -258,7 +273,19 @@ function requestSiteAccess(): void {
 }
 
 function openSignInTab(): void {
-  chrome.tabs.create({ url: SIGN_IN_URL });
+  if (!firefox) {
+    chrome.tabs.create({ url: SIGN_IN_URL });
+    return;
+  }
+  // Sign in inside the container of the current tab, where Fetch looks first.
+  void getActiveTab().then((tab) => {
+    const cookieStoreId = containerStoreId(tab as TabWithCookieStore | null);
+    chrome.tabs.create(
+      cookieStoreId
+        ? ({ url: SIGN_IN_URL, cookieStoreId } as chrome.tabs.CreateProperties)
+        : { url: SIGN_IN_URL },
+    );
+  });
 }
 
 function saveStoredPairing(pairing: PairingConfig): Promise<void> {
@@ -636,7 +663,7 @@ function activateHomeAssistantTab(callbackUrl: string): Promise<number | null> {
         return;
       }
 
-      const tab = tabs.find((candidate) => candidate.id);
+      const tab = findHomeAssistantTab(tabs, callbackUrl, firefox);
       if (!tab?.id) {
         resolve(null);
         return;

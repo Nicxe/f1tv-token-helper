@@ -101,7 +101,8 @@ The flow is the same as in Chrome:
 4. Select `Sign in` if needed, return to the popup, and select `Fetch`.
 5. Select `Send to Home Assistant`.
 
-If you use Firefox containers, sign in to Formula 1 in a tab of the container you want, and open the popup from a tab in that same container.
+If you use Firefox containers, open the Home Assistant pairing page in the container you sign in to Formula 1 with.
+The extension checks the cookies of the active tab's container first, then the default cookies, and `Sign in` opens Formula 1 in that same container.
 To use the extension in private windows, enable `Run in Private Windows` for it in `about:addons`.
 
 ## Pairing Details

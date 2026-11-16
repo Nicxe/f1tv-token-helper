@@ -1,4 +1,8 @@
-import { type PairingConfig, callbackOriginPattern } from "./pairing.js";
+import {
+  type PairingConfig,
+  callbackOriginPattern,
+  isPairingExpired,
+} from "./pairing.js";
 
 export const FORMULA1_HOST_PATTERNS = [
   "https://formula1.com/*",
@@ -16,6 +20,11 @@ export type PermissionsLike = {
 
 export type TabWithCookieStore = {
   cookieStoreId?: string;
+};
+
+export type TabLike = {
+  id?: number;
+  url?: string;
 };
 
 export function isFirefoxExtensionUrl(url: string): boolean {
@@ -39,11 +48,12 @@ export function homeAssistantPermissionPattern(
 export function requiredSiteAccess(
   pairing: PairingConfig | null,
   firefox: boolean,
+  nowMs = Date.now(),
 ): string[] {
   if (!firefox) {
     return [];
   }
-  return pairing
+  return pairing && !isPairingExpired(pairing, nowMs)
     ? [
         ...FORMULA1_HOST_PATTERNS,
         homeAssistantPermissionPattern(pairing.callbackUrl, true),
@@ -85,14 +95,45 @@ export function describeSiteAccess(origins: string[]): string[] {
   return [...new Set(labels)];
 }
 
-// Containers in Firefox keep their own cookies, so also look in the store of
-// the tab the user is on. undefined means the browser default store.
+// The permission pattern covers every port on the host, so pick the tab whose
+// origin, port included, is the Home Assistant that issued the pairing.
+export function findHomeAssistantTab<T extends TabLike>(
+  tabs: T[],
+  callbackUrl: string,
+  firefox: boolean,
+): T | undefined {
+  if (!firefox) {
+    return tabs.find((candidate) => candidate.id);
+  }
+  const origin = new URL(callbackUrl).origin;
+  return tabs.find(
+    (candidate) =>
+      candidate.id && candidate.url && originOf(candidate.url) === origin,
+  );
+}
+
+function originOf(url: string): string | null {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return null;
+  }
+}
+
+export function containerStoreId(
+  tab: TabWithCookieStore | null,
+): string | undefined {
+  const storeId = tab?.cookieStoreId;
+  return storeId && storeId !== FIREFOX_DEFAULT_COOKIE_STORE
+    ? storeId
+    : undefined;
+}
+
+// Containers in Firefox keep their own cookies. Look in the container of the
+// tab the user is on first, then in the default store (undefined).
 export function cookieStoreIdsForTab(
   tab: TabWithCookieStore | null,
 ): (string | undefined)[] {
-  const storeId = tab?.cookieStoreId;
-  if (!storeId || storeId === FIREFOX_DEFAULT_COOKIE_STORE) {
-    return [undefined];
-  }
-  return [undefined, storeId];
+  const storeId = containerStoreId(tab);
+  return storeId ? [storeId, undefined] : [undefined];
 }
