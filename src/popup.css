@@ -305,14 +305,6 @@ h1 {
   display: none;
 }
 
-/* Firefox caps extension popups at 600px tall; let the content set the height. */
-@supports (-moz-appearance: none) {
-  html,
-  body {
-    min-height: 0;
-  }
-}
-
 .panel-heading {
   display: flex;
   align-items: center;

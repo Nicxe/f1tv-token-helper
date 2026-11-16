@@ -22,8 +22,9 @@ export function isFirefoxExtensionUrl(url: string): boolean {
   return url.startsWith("moz-extension://");
 }
 
-// Firefox match patterns ignore ports, and reject patterns that contain one.
-// Chrome keeps the exact origin pattern it has always requested.
+// Gecko accepts a match pattern with a port but then matches nothing, so the
+// Home Assistant default http://host:8123 would never be reachable. A pattern
+// without a port matches every port. Chrome keeps its exact origin pattern.
 export function homeAssistantPermissionPattern(
   callbackUrl: string,
   firefox: boolean,
