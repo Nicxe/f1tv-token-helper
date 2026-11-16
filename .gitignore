@@ -5,3 +5,4 @@ dist-firefox/
 coverage/
 npm-debug.log*
 
+web-ext-artifacts/
