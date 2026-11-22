@@ -16,6 +16,7 @@ updates:
           - "version-update:semver-major"
     groups:
       extension-tooling:
+        update-types: ["minor", "patch"]
         patterns:
           - "@eslint/*"
           - "@types/*"
@@ -26,6 +27,7 @@ updates:
           - "vitest"
       release-tooling:
         dependency-type: "development"
+        update-types: ["minor", "patch"]
         patterns:
           - "@nicxe/semantic-release-config"
           - "@semantic-release/*"
