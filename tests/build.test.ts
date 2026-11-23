@@ -28,6 +28,7 @@ describe("Firefox manifest", () => {
     expect(manifest).toEqual({
       ...chromeManifest,
       incognito: "not_allowed",
+      content_security_policy: { extension_pages: "script-src 'self';" },
       browser_specific_settings: {
         gecko: {
           id: DEFAULT_FIREFOX_EXTENSION_ID,

@@ -15,6 +15,12 @@ export function toFirefoxManifest(
     ...chromeManifest,
     // Private windows stay off; users cannot enable them in about:addons.
     incognito: "not_allowed",
+    // Firefox's default MV3 policy adds upgrade-insecure-requests, which turns
+    // a local http://host:8123 callback into https:// and breaks LAN pairing.
+    // pairing.ts only accepts plain HTTP for local hosts.
+    content_security_policy: {
+      extension_pages: "script-src 'self';",
+    },
     browser_specific_settings: {
       gecko: {
         id,
