@@ -581,8 +581,9 @@ async function sendTokenToHomeAssistant(): Promise<void> {
   const permissionGranted = await (earlyPermissionRequest ??
     requestHomeAssistantPermission(pairing.callbackUrl));
   if (!permissionGranted) {
-    setStatus("Permission needed", "Allow access to this Home Assistant URL.");
+    // render() shows "Ready" while a token is loaded, so set the status after.
     render();
+    setStatus("Permission needed", "Allow access to this Home Assistant URL.");
     return;
   }
 
@@ -590,6 +591,7 @@ async function sendTokenToHomeAssistant(): Promise<void> {
   sendButton.disabled = true;
   setStatus("Sending", "Sending the token to Home Assistant.");
 
+  let failure: { status: string; detail: string } | null = null;
   try {
     const response = await fetch(pairing.callbackUrl, {
       method: "POST",
@@ -621,13 +623,24 @@ async function sendTokenToHomeAssistant(): Promise<void> {
       void refreshSiteAccess();
       setStatus("Done", completionDetail);
     } else {
-      setStatus("Not sent", formatCallbackError(body?.code, response.status));
+      failure = {
+        status: "Not sent",
+        detail: formatCallbackError(body?.code, response.status),
+      };
     }
   } catch {
-    setStatus("Unreachable", "Home Assistant could not be reached.");
+    failure = {
+      status: "Unreachable",
+      detail: "Home Assistant could not be reached.",
+    };
   } finally {
     setBusy(false, "send");
     render();
+    // The token is still loaded after a failure, so render() just showed
+    // "Ready"; restore the failure.
+    if (failure) {
+      setStatus(failure.status, failure.detail);
+    }
   }
 }
 
