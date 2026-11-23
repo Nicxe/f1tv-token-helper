@@ -27,6 +27,7 @@ describe("Firefox manifest", () => {
     expect(chromeManifest).not.toHaveProperty("browser_specific_settings");
     expect(manifest).toEqual({
       ...chromeManifest,
+      incognito: "not_allowed",
       browser_specific_settings: {
         gecko: {
           id: DEFAULT_FIREFOX_EXTENSION_ID,
@@ -37,14 +38,14 @@ describe("Firefox manifest", () => {
     });
   });
 
-  it("supports ESR 128 and a custom add-on id", async () => {
+  it("requires Firefox 140 and supports a custom add-on id", async () => {
     const manifest = toFirefoxManifest(await readSourceManifest(), {
       id: "helper@example.com",
     });
 
     expect(manifest.browser_specific_settings.gecko).toMatchObject({
       id: "helper@example.com",
-      strict_min_version: "128.0",
+      strict_min_version: "140.0",
     });
   });
 

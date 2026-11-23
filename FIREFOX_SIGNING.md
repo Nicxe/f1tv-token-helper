@@ -7,7 +7,7 @@ Nothing in this repository uploads to AMO automatically.
 
 ## 1. Choose the add-on ID
 
-The Firefox build sets `browser_specific_settings.gecko.id` to `f1tv-token-helper@wannesmarynen.github.io` by default.
+The Firefox build sets `browser_specific_settings.gecko.id` to the project-owned `f1tv-token-helper@nicxe.github.io` by default.
 An ID belongs to the AMO account that first signs it, so whoever signs should use an ID they own:
 
 ```bash
@@ -29,9 +29,9 @@ npm test
 npm run build:firefox
 ```
 
-`web-ext lint` is expected to report 0 errors and 2 warnings.
-Both warnings say `data_collection_permissions` needs Firefox 140 (Android 142).
-Older Firefox versions ignore the key; AMO requires new add-ons to declare it.
+`web-ext lint` is expected to report 0 errors and 1 warning.
+The warning says `data_collection_permissions` needs Firefox for Android 142; the build targets desktop Firefox 140+.
+AMO requires new add-ons to declare the key.
 The build declares `authenticationInfo` because the F1TV token is sent to the user's own Home Assistant.
 
 ## 4. Prepare the source archive

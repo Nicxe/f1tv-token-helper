@@ -56,7 +56,7 @@ After loading or reloading the unpacked extension, use the same Home Assistant p
 
 A Firefox build is produced from the same source.
 It is not published on addons.mozilla.org (AMO).
-It needs Firefox 128 or later, including ESR 128, and also works in Firefox-based browsers such as Zen.
+It needs Firefox 140 or later, including ESR 140, and also works in Firefox-based browsers such as Zen.
 
 ### Install for testing
 
@@ -103,7 +103,7 @@ The flow is the same as in Chrome:
 
 If you use Firefox containers, open the Home Assistant pairing page in the container you sign in to Formula 1 with.
 The extension checks the cookies of the active tab's container first, then the default cookies, and `Sign in` opens Formula 1 in that same container.
-To use the extension in private windows, enable `Run in Private Windows` for it in `about:addons`.
+The extension does not run in private windows.
 
 ## Pairing Details
 

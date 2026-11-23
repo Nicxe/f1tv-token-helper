@@ -4,9 +4,8 @@ import { fileURLToPath } from "node:url";
 
 import { resolveTarget } from "./targets.mjs";
 
-export const DEFAULT_FIREFOX_EXTENSION_ID =
-  "f1tv-token-helper@wannesmarynen.github.io";
-export const FIREFOX_MIN_VERSION = "128.0";
+export const DEFAULT_FIREFOX_EXTENSION_ID = "f1tv-token-helper@nicxe.github.io";
+export const FIREFOX_MIN_VERSION = "140.0";
 
 export function toFirefoxManifest(
   chromeManifest,
@@ -14,6 +13,8 @@ export function toFirefoxManifest(
 ) {
   return {
     ...chromeManifest,
+    // Private windows stay off; users cannot enable them in about:addons.
+    incognito: "not_allowed",
     browser_specific_settings: {
       gecko: {
         id,
