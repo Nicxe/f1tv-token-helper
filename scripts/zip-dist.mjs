@@ -16,6 +16,7 @@ const result = spawnSync(
     "popup.css",
     "popup.js",
     "pairing.js",
+    "platform.js",
     "token.js",
     "icons",
   ],

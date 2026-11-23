@@ -1,13 +1,16 @@
 {
   "name": "f1tv-token-helper",
   "version": "0.0.0-development",
-  "description": "Chrome extension for sending a local F1TV live timing token to Home Assistant",
+  "description": "Chrome and Firefox extension for sending a local F1TV live timing token to Home Assistant",
   "private": true,
   "license": "MIT",
   "type": "module",
   "scripts": {
     "clean": "node scripts/clean.mjs",
     "build": "npm run clean && npm run icons && tsc -p tsconfig.json && node scripts/copy-assets.mjs && node scripts/zip-dist.mjs",
+    "build:firefox": "node scripts/clean.mjs firefox && npm run icons && tsc -p tsconfig.json --outDir dist-firefox/extension && node scripts/copy-assets.mjs firefox && node scripts/firefox-manifest.mjs && npm run lint:firefox && web-ext build --source-dir dist-firefox/extension --artifacts-dir dist-firefox --filename f1tv-token-helper-firefox.zip --overwrite-dest",
+    "lint:firefox": "web-ext lint --source-dir dist-firefox/extension",
+    "start:firefox": "web-ext run --source-dir dist-firefox/extension",
     "icons": "node scripts/generate-icons.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
@@ -30,7 +33,8 @@
     "semantic-release": "^25.0.9",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.73.0",
-    "vitest": "^5.1.1"
+    "vitest": "^5.1.1",
+    "web-ext": "^10.8.0"
   },
   "overrides": {
     "tar": "^7.5.10",

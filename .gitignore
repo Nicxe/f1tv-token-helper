@@ -1,6 +1,8 @@
 .DS_Store
 node_modules/
 dist/
+dist-firefox/
 coverage/
 npm-debug.log*
 
+web-ext-artifacts/

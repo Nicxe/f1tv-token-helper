@@ -4,10 +4,22 @@ import {
 } from "./token.js";
 import {
   type PairingConfig,
-  callbackOriginPattern,
   isPairingExpired,
   parsePairingUrl,
 } from "./pairing.js";
+import {
+  FORMULA1_HOST_PATTERNS,
+  type TabWithCookieStore,
+  containerStoreId,
+  cookieStoreIdsForTab,
+  describeSiteAccess,
+  findHomeAssistantTab,
+  findMissingOrigins,
+  homeAssistantPermissionPattern,
+  isFirefoxExtensionUrl,
+  isFormula1Pattern,
+  requiredSiteAccess,
+} from "./platform.js";
 
 type TokenCandidate = {
   label: string;
@@ -22,6 +34,9 @@ const COOKIE_URLS = [
   "https://f1tv.formula1.com/",
 ];
 const STORED_PAIRING_KEY = "homeAssistantPairing";
+const ACCESS_NEEDED_DETAIL =
+  "Firefox needs your permission first. Select Allow access below.";
+const firefox = isFirefoxExtensionUrl(globalThis.location.href);
 
 const fetchButton = getElement<HTMLButtonElement>("fetch-token");
 const signInButton = getElement<HTMLButtonElement>("open-signin");
@@ -32,6 +47,9 @@ const downloadButton = getElement<HTMLButtonElement>("download-header");
 const revealButton = getElement<HTMLButtonElement>("reveal-header");
 const clearButton = getElement<HTMLButtonElement>("clear-token");
 const clearPairingButton = getElement<HTMLButtonElement>("clear-pairing");
+const grantAccessButton = getElement<HTMLButtonElement>("grant-access");
+const accessPanel = getElement<HTMLElement>("access-panel");
+const accessList = getElement<HTMLElement>("access-list");
 const statusElement = getElement<HTMLElement>("status");
 const detailElement = getElement<HTMLElement>("status-detail");
 const authActionsElement = getElement<HTMLElement>("auth-actions");
@@ -49,6 +67,8 @@ let headerVisible = false;
 let pairingConfig: PairingConfig | null = loadPairingFromLocation();
 let pairingTabId: number | null = null;
 let autoFetchStarted = false;
+let missingSiteAccess: string[] = [];
+let siteAccessCheck = 0;
 let currentStatus = {
   status: "Idle",
   detail: "No token loaded.",
@@ -56,6 +76,19 @@ let currentStatus = {
 
 render();
 void initializePairing();
+
+if (firefox) {
+  chrome.permissions.onAdded.addListener(() => {
+    void refreshSiteAccess();
+  });
+  chrome.permissions.onRemoved.addListener(() => {
+    void refreshSiteAccess();
+  });
+}
+
+grantAccessButton.addEventListener("click", () => {
+  requestSiteAccess();
+});
 
 signInButton.addEventListener("click", () => {
   openSignInTab();
@@ -106,6 +139,7 @@ clearPairingButton.addEventListener("click", () => {
   void clearStoredPairing();
   setStatus("Idle", "No token loaded.");
   render();
+  void refreshSiteAccess();
 });
 
 function loadPairingFromLocation(): PairingConfig | null {
@@ -117,6 +151,7 @@ async function initializePairing(): Promise<void> {
   if (pairingConfig && !isPairingExpired(pairingConfig)) {
     await saveStoredPairing(pairingConfig);
     render();
+    void refreshSiteAccess();
     void autoFetchForPairing();
     return;
   }
@@ -127,6 +162,7 @@ async function initializePairing(): Promise<void> {
 
   const storedPairing = await loadStoredPairing();
   if (!storedPairing) {
+    void refreshSiteAccess();
     return;
   }
 
@@ -134,6 +170,7 @@ async function initializePairing(): Promise<void> {
   pairingInput.value = pairingUrlPlaceholder(storedPairing);
   setStatus("Connected", "Home Assistant pairing was restored.");
   render();
+  void refreshSiteAccess();
   void autoFetchForPairing();
 }
 
@@ -154,12 +191,18 @@ async function loadPairingFromActiveTab(): Promise<boolean> {
   await saveStoredPairing(result.config);
   setStatus("Connected", "Home Assistant pairing is ready.");
   render();
+  void refreshSiteAccess();
   void autoFetchForPairing();
   return true;
 }
 
 async function autoFetchForPairing(): Promise<void> {
   if (autoFetchStarted || currentToken || !pairingConfig) {
+    return;
+  }
+  if (firefox && !(await hasFormula1Access())) {
+    setStatus("Access needed", ACCESS_NEEDED_DETAIL);
+    render();
     return;
   }
 
@@ -175,8 +218,74 @@ async function autoFetchForPairing(): Promise<void> {
   );
 }
 
+async function refreshSiteAccess(): Promise<void> {
+  if (!firefox) {
+    return;
+  }
+  const check = ++siteAccessCheck;
+  const missing = await findMissingOrigins(
+    chrome.permissions,
+    requiredSiteAccess(pairingConfig, true),
+  );
+  if (check !== siteAccessCheck) {
+    return;
+  }
+  missingSiteAccess = missing;
+  if (
+    currentStatus.status === "Access needed" &&
+    !missing.some(isFormula1Pattern)
+  ) {
+    setStatus("Idle", "Formula 1 access is allowed. Select Fetch.");
+  }
+  render();
+}
+
+async function hasFormula1Access(): Promise<boolean> {
+  const missing = await findMissingOrigins(
+    chrome.permissions,
+    FORMULA1_HOST_PATTERNS,
+  );
+  return missing.length === 0;
+}
+
+// Firefox only honours permissions.request() synchronously inside a click
+// handler, and may close the popup while its prompt is open. Pairing is kept
+// in session storage, so reopening the popup picks up where it left off.
+function requestSiteAccess(): void {
+  const origins = [...missingSiteAccess];
+  if (!origins.length) {
+    return;
+  }
+  chrome.permissions.request({ origins }, (granted) => {
+    if (chrome.runtime.lastError || !granted) {
+      setStatus(
+        "Access needed",
+        "Firefox did not grant access. Select Allow access to try again.",
+      );
+      render();
+      return;
+    }
+    void refreshSiteAccess().then(() => {
+      autoFetchStarted = false;
+      void autoFetchForPairing();
+    });
+  });
+}
+
 function openSignInTab(): void {
-  chrome.tabs.create({ url: SIGN_IN_URL });
+  if (!firefox) {
+    chrome.tabs.create({ url: SIGN_IN_URL });
+    return;
+  }
+  // Sign in inside the container of the current tab, where Fetch looks first.
+  void getActiveTab().then((tab) => {
+    const cookieStoreId = containerStoreId(tab as TabWithCookieStore | null);
+    chrome.tabs.create(
+      cookieStoreId
+        ? ({ url: SIGN_IN_URL, cookieStoreId } as chrome.tabs.CreateProperties)
+        : { url: SIGN_IN_URL },
+    );
+  });
 }
 
 function saveStoredPairing(pairing: PairingConfig): Promise<void> {
@@ -220,6 +329,13 @@ function pairingUrlPlaceholder(pairing: PairingConfig): string {
 async function fetchToken(
   options: { automatic?: boolean } = {},
 ): Promise<boolean> {
+  if (firefox && !(await hasFormula1Access())) {
+    setStatus("Access needed", ACCESS_NEEDED_DETAIL);
+    render();
+    void refreshSiteAccess();
+    return false;
+  }
+
   setBusy(true, "scan");
   setStatus(
     "Scanning",
@@ -280,14 +396,21 @@ function chooseToken(candidates: TokenCandidate[]): {
 
 async function getCookieCandidates(): Promise<TokenCandidate[]> {
   const candidates: TokenCandidate[] = [];
+  const storeIds = firefox
+    ? cookieStoreIdsForTab((await getActiveTab()) as TabWithCookieStore | null)
+    : [undefined];
 
-  for (const url of COOKIE_URLS) {
-    const cookie = await getCookie(url, COOKIE_NAME);
-    if (cookie?.value) {
-      candidates.push({
-        label: new URL(url).hostname,
-        value: cookie.value,
-      });
+  for (const storeId of storeIds) {
+    for (const url of COOKIE_URLS) {
+      const cookie = await getCookie(url, COOKIE_NAME, storeId);
+      if (cookie?.value) {
+        candidates.push({
+          label: storeId
+            ? `${new URL(url).hostname} (container)`
+            : new URL(url).hostname,
+          value: cookie.value,
+        });
+      }
     }
   }
 
@@ -297,9 +420,11 @@ async function getCookieCandidates(): Promise<TokenCandidate[]> {
 function getCookie(
   url: string,
   name: string,
+  storeId?: string,
 ): Promise<chrome.cookies.Cookie | null> {
   return new Promise((resolve) => {
-    chrome.cookies.get({ name, url }, (cookie) => {
+    const details = storeId ? { name, url, storeId } : { name, url };
+    chrome.cookies.get(details, (cookie) => {
       if (chrome.runtime.lastError) {
         resolve(null);
         return;
@@ -424,6 +549,7 @@ function connectPairing(): void {
   void saveStoredPairing(result.config);
   setStatus("Connected", "Home Assistant pairing is ready.");
   render();
+  void refreshSiteAccess();
   void autoFetchForPairing();
 }
 
@@ -440,6 +566,11 @@ async function sendTokenToHomeAssistant(): Promise<void> {
     return;
   }
 
+  // Firefox drops the user gesture after the first await, so ask up front.
+  const earlyPermissionRequest = firefox
+    ? requestHomeAssistantPermission(pairing.callbackUrl)
+    : null;
+
   if (!currentToken && !(await fetchToken())) {
     return;
   }
@@ -447,12 +578,12 @@ async function sendTokenToHomeAssistant(): Promise<void> {
     return;
   }
 
-  const permissionGranted = await requestHomeAssistantPermission(
-    pairing.callbackUrl,
-  );
+  const permissionGranted = await (earlyPermissionRequest ??
+    requestHomeAssistantPermission(pairing.callbackUrl));
   if (!permissionGranted) {
-    setStatus("Permission needed", "Allow access to this Home Assistant URL.");
+    // render() shows "Ready" while a token is loaded, so set the status after.
     render();
+    setStatus("Permission needed", "Allow access to this Home Assistant URL.");
     return;
   }
 
@@ -460,6 +591,7 @@ async function sendTokenToHomeAssistant(): Promise<void> {
   sendButton.disabled = true;
   setStatus("Sending", "Sending the token to Home Assistant.");
 
+  let failure: { status: string; detail: string } | null = null;
   try {
     const response = await fetch(pairing.callbackUrl, {
       method: "POST",
@@ -488,15 +620,27 @@ async function sendTokenToHomeAssistant(): Promise<void> {
       autoFetchStarted = false;
       pairingInput.value = "";
       void clearStoredPairing();
+      void refreshSiteAccess();
       setStatus("Done", completionDetail);
     } else {
-      setStatus("Not sent", formatCallbackError(body?.code, response.status));
+      failure = {
+        status: "Not sent",
+        detail: formatCallbackError(body?.code, response.status),
+      };
     }
   } catch {
-    setStatus("Unreachable", "Home Assistant could not be reached.");
+    failure = {
+      status: "Unreachable",
+      detail: "Home Assistant could not be reached.",
+    };
   } finally {
     setBusy(false, "send");
     render();
+    // The token is still loaded after a failure, so render() just showed
+    // "Ready"; restore the failure.
+    if (failure) {
+      setStatus(failure.status, failure.detail);
+    }
   }
 }
 
@@ -525,13 +669,14 @@ async function finishPairingBrowserFlow(
 
 function activateHomeAssistantTab(callbackUrl: string): Promise<number | null> {
   return new Promise((resolve) => {
-    chrome.tabs.query({ url: callbackOriginPattern(callbackUrl) }, (tabs) => {
+    const url = homeAssistantPermissionPattern(callbackUrl, firefox);
+    chrome.tabs.query({ url }, (tabs) => {
       if (chrome.runtime.lastError) {
         resolve(null);
         return;
       }
 
-      const tab = tabs.find((candidate) => candidate.id);
+      const tab = findHomeAssistantTab(tabs, callbackUrl, firefox);
       if (!tab?.id) {
         resolve(null);
         return;
@@ -556,7 +701,7 @@ function closeTab(tabId: number): Promise<boolean> {
 }
 
 function requestHomeAssistantPermission(callbackUrl: string): Promise<boolean> {
-  const origins = [callbackOriginPattern(callbackUrl)];
+  const origins = [homeAssistantPermissionPattern(callbackUrl, firefox)];
   return new Promise((resolve) => {
     chrome.permissions.request({ origins }, (granted) => {
       if (chrome.runtime.lastError) {
@@ -625,6 +770,7 @@ function render(error?: Extract<TokenValidationResult, { ok: false }>): void {
   authActionsElement.classList.toggle("hidden", hasToken && hasPairing);
   sendButton.classList.toggle("hidden", !hasToken || !hasPairing);
   clearPairingButton.disabled = !hasPairing;
+  renderSiteAccess();
   copyButton.disabled = !hasToken;
   downloadButton.disabled = !hasToken;
   revealButton.disabled = !hasToken;
@@ -692,6 +838,17 @@ function getElement<T extends HTMLElement>(id: string): T {
     throw new Error(`Missing element #${id}`);
   }
   return element as T;
+}
+
+function renderSiteAccess(): void {
+  accessPanel.classList.toggle("hidden", missingSiteAccess.length === 0);
+  accessList.replaceChildren(
+    ...describeSiteAccess(missingSiteAccess).map((label) => {
+      const item = document.createElement("li");
+      item.textContent = label;
+      return item;
+    }),
+  );
 }
 
 function renderPairing(): void {

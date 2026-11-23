@@ -24,6 +24,25 @@
         <p id="status-detail">No token loaded.</p>
       </section>
 
+      <section
+        id="access-panel"
+        class="access-panel hidden"
+        aria-label="Site access"
+      >
+        <span class="eyebrow">Firefox site access</span>
+        <p>
+          Firefox lets you choose which sites an extension can use. Allow access
+          to:
+        </p>
+        <ul id="access-list"></ul>
+        <p class="access-note">
+          Firefox may close this popup while it asks. Open it again afterwards.
+        </p>
+        <button id="grant-access" type="button" class="primary">
+          Allow access
+        </button>
+      </section>
+
       <section class="action-panel" aria-label="Next action">
         <div id="auth-actions" class="toolbar">
           <button id="open-signin" type="button" class="secondary">
